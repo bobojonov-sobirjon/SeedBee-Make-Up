@@ -1,0 +1,489 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from django.conf import settings
+
+from urllib.parse import urlparse, parse_qs
+
+from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import datetime
+
+from apps.accounts.models import PricingToken, MyToken, GiftToken
+from apps.accounts.services import GoogleLoginService
+import requests
+
+from apps.accounts.serializers import (
+	SignUpSerializer, CustomAuthTokenSerializer, CustomUserDetailSerializer,
+	PasswordUpdateSerializer, PricingTokenSerializer, ButTokenSerializer, GiftTokenSerializer,
+	TokenPurchaseHistorySerializer
+)
+
+User = get_user_model()
+
+
+class GoogleLoginAPIView(APIView):
+	permission_classes = [AllowAny]
+
+	@swagger_auto_schema(
+		operation_summary="Google OAuth2 Authentication URL",
+		operation_description="This endpoint returns the URL to begin the Google OAuth2 authentication process.",
+		tags=['Authentication'],
+		responses={
+			200: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					"auth_url": openapi.Schema(
+						type=openapi.TYPE_STRING,
+						description="URL to authenticate via Google OAuth2."
+					),
+				}
+			),
+		}
+	)
+	def get(self, request):
+		"""Get Google OAuth2 authentication URL"""
+		google_service = GoogleLoginService()
+		auth_url = google_service.get_authorization_url()
+		return Response({"auth_url": auth_url}, status=status.HTTP_200_OK)
+
+	@swagger_auto_schema(
+		operation_summary="Exchange Code for JWT Tokens",
+		operation_description="This endpoint exchanges the Google OAuth2 authorization code for JWT access and refresh tokens.",
+		tags=['Authentication'],
+		request_body=openapi.Schema(
+			type=openapi.TYPE_OBJECT,
+			properties={
+				"code": openapi.Schema(
+					type=openapi.TYPE_STRING,
+					description="The authorization code from Google OAuth2."
+				),
+			},
+			required=["code"]
+		),
+		responses={
+			200: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					"access_token": openapi.Schema(
+						type=openapi.TYPE_STRING,
+						description="JWT access token."
+					),
+					"refresh_token": openapi.Schema(
+						type=openapi.TYPE_STRING,
+						description="JWT refresh token."
+					),
+				}
+			),
+			400: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					"error": openapi.Schema(
+						type=openapi.TYPE_STRING,
+						description="Description of the error."
+					),
+				}
+			),
+		}
+	)
+	def post(self, request):
+		"""Exchange Google OAuth2 code for JWT tokens"""
+		code = request.data.get('code')
+
+		if not code:
+			return Response({"error": "Authorization code missing"}, status=status.HTTP_400_BAD_REQUEST)
+
+		try:
+			google_service = GoogleLoginService()
+
+			tokens = google_service.get_tokens(code)
+
+			if 'error' in tokens or 'access_token' not in tokens:
+				error_msg = tokens.get('error', 'Failed to retrieve tokens')
+				error_description = tokens.get('error_description', '')
+
+				if error_msg == "invalid_grant":
+					detailed_error = "Invalid authorization code. Possible reasons:\n"
+					detailed_error += "1. Code already used\n2. Code expired\n3. Redirect URI mismatch\n4. Clock issue\n"
+					detailed_error += f"Original error: {error_msg}"
+					if error_description:
+						detailed_error += f" - {error_description}"
+
+					return Response({
+						"error": detailed_error,
+						"debug_info": {
+							"client_id": settings.GOOGLE_CLIENT_ID[:20] + "...",
+							"redirect_uri": settings.GOOGLE_REDIRECT_URI,
+							"code_length": len(code),
+							"original_error": error_msg,
+							"error_description": error_description
+						}
+					}, status=status.HTTP_400_BAD_REQUEST)
+
+				return Response({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
+
+			user_info = google_service.get_user_info(tokens['access_token'])
+
+			if 'error' in user_info:
+				return Response({"error": user_info['error']}, status=status.HTTP_400_BAD_REQUEST)
+
+			user = google_service.create_or_get_user(user_info)
+
+			try:
+				access_token, refresh_token = google_service.get_jwt_token(user)
+				return Response({
+					"access_token": access_token,
+					"refresh_token": refresh_token
+				}, status=status.HTTP_200_OK)
+
+			except Exception as jwt_error:
+				raise jwt_error
+
+		except ValueError as e:
+			return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserSignupView(APIView):
+	permission_classes = [AllowAny]
+
+	@swagger_auto_schema(request_body=SignUpSerializer, tags=['Account'])
+	def post(self, request, *args, **kwargs):
+		serializer = SignUpSerializer(data=request.data)
+		if serializer.is_valid():
+			user = serializer.save()
+			return Response({"message": "User created successfully."}, status=status.HTTP_201_CREATED)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomAuthTokenView(APIView):
+	permission_classes = [AllowAny]
+
+	@swagger_auto_schema(request_body=CustomAuthTokenSerializer, tags=['Account'])
+	def post(self, request):
+		serializer = CustomAuthTokenSerializer(data=request.data)
+
+		if serializer.is_valid():
+			user = serializer.validated_data['user']
+			refresh = RefreshToken.for_user(user)
+
+			return Response({
+				'refresh': str(refresh),
+				'access': str(refresh.access_token),
+			}, status=status.HTTP_200_OK)
+
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomUserDetailView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		responses={200: CustomUserDetailSerializer()},
+		operation_description="Retrieve details of the authenticated user.", tags=['Account']
+	)
+	def get(self, request):
+		user = request.user
+		serializer = CustomUserDetailSerializer(user, context={'request': request})
+		return Response(serializer.data, status=status.HTTP_200_OK)
+
+	@swagger_auto_schema(
+		responses={200: CustomUserDetailSerializer()},
+		request_body=openapi.Schema(
+			type=openapi.TYPE_OBJECT,
+			properties={
+				'first_name': openapi.Schema(type=openapi.TYPE_STRING, max_length=30),
+				'last_name': openapi.Schema(type=openapi.TYPE_STRING, max_length=30),
+				'avatar': openapi.Schema(type=openapi.TYPE_FILE, description='User avatar image'),
+				'height': openapi.Schema(type=openapi.TYPE_NUMBER, description='Height in centimeters'),
+				'weight': openapi.Schema(type=openapi.TYPE_NUMBER, description='Weight in kilograms'),
+				'gender': openapi.Schema(type=openapi.TYPE_STRING, enum=['M', 'F', 'O'], description='Gender'),
+				'age': openapi.Schema(type=openapi.TYPE_INTEGER, description='Age in years'),
+				'goal': openapi.Schema(type=openapi.TYPE_STRING, description='User goal'),
+			}
+		),
+		operation_description="Update the authenticated user's profile. Supports both JSON and multipart/form-data for avatar uploads.",
+		tags=['Account']
+	)
+	def put(self, request):
+		user = request.user
+		serializer = CustomUserDetailSerializer(user, data=request.data, partial=True, context={'request': request})
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_200_OK)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+	@swagger_auto_schema(
+		responses={204: 'No Content'},
+		operation_description="Delete the authenticated user's account.", tags=['Account']
+	)
+	def delete(self, request):
+		user = request.user
+		user.delete()
+		return Response({"detail": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomUserView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		responses={200: CustomUserDetailSerializer()},
+		operation_description="Retrieve details of the guest user.", tags=['Account']
+	)
+	def get(self, request, *args, **kwargs):
+		user_model = get_user_model()
+		user = get_object_or_404(user_model, id=kwargs.get('id'))
+		serializer = CustomUserDetailSerializer(user, context={'request': request})
+		return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PasswordUpdateView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		request_body=PasswordUpdateSerializer,
+		tags=['Account'],
+		responses={
+			200: "Password updated successfully.",
+			400: "Bad Request: Password update failed."
+		},
+		operation_description="Update the authenticated user's password."
+	)
+	def patch(self, request):
+		serializer = PasswordUpdateSerializer(data=request.data, context={'request': request})
+		if serializer.is_valid():
+			serializer.update(request.user, serializer.validated_data)
+			return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PricingTokenView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		responses={200: PricingTokenSerializer(many=True)},
+		operation_description="Retrieve all pricing tokens.", tags=['Pricing']
+	)
+	def get(self, request):
+		get_priing_tokens = PricingToken.objects.all()
+		serializer = PricingTokenSerializer(get_priing_tokens, many=True, context={'request': request})
+		return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ButTokenView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		responses={200: ButTokenSerializer(many=True)},
+		request_body=ButTokenSerializer,
+		operation_description="Retrieve all but tokens.", tags=['Pricing']
+	)
+	def post(self, request):
+		user = request.user
+		tokens = ButTokenSerializer(data=request.data, context={'request': request})
+
+		if tokens.is_valid():
+			tokens.save(user=user)
+			return Response(tokens.data, status=status.HTTP_201_CREATED)
+
+		return Response(tokens.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GiftTokensView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	@swagger_auto_schema(
+		responses={200: GiftTokenSerializer()},
+		request_body=GiftTokenSerializer,
+		operation_description="Send a gift token to another user by email.",
+		tags=['Pricing']
+	)
+	def post(self, request):
+		gift_token = GiftTokenSerializer(data=request.data, context={'request': request})
+
+		if gift_token.is_valid():
+			gift_token.save()
+			return Response(gift_token.data, status=status.HTTP_201_CREATED)
+
+		return Response(gift_token.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateProfileView(APIView):
+	permission_classes = [IsAuthenticated]
+	
+	def put(self, request):
+		"""Update user profile"""
+		user = request.user
+		data = request.data
+		
+		# Update user fields
+		if 'age' in data:
+			user.age = data['age']
+		if 'gender' in data:
+			user.gender = data['gender']
+		if 'weight' in data:
+			user.weight = data['weight']
+		if 'height' in data:
+			user.height = data['height']
+		if 'goal' in data:
+			user.goal = data['goal']
+		if 'calories' in data:
+			user.calories = data['calories']
+			
+		user.save()
+		
+		return Response({
+			'success': True,
+			'message': 'Profile updated successfully'
+		})
+
+
+class TokenPurchaseHistoryView(APIView):
+	"""API View to get user's token purchase history"""
+	permission_classes = [IsAuthenticated]
+	
+	@swagger_auto_schema(
+		operation_summary="Get Token Purchase History",
+		operation_description="Retrieve the authenticated user's token purchase history with details",
+		tags=['Pricing'],
+		responses={
+			200: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+					'count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Total number of purchases'),
+					'purchases': openapi.Schema(
+						type=openapi.TYPE_ARRAY,
+						items=openapi.Schema(
+							type=openapi.TYPE_OBJECT,
+							properties={
+								'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+								'token_details': openapi.Schema(
+									type=openapi.TYPE_OBJECT,
+									properties={
+										'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+										'token_name': openapi.Schema(type=openapi.TYPE_STRING),
+										'token_value': openapi.Schema(type=openapi.TYPE_STRING),
+										'original_created_at': openapi.Schema(type=openapi.TYPE_STRING)
+									}
+								),
+								'purchase_date': openapi.Schema(type=openapi.TYPE_STRING),
+								'created_at': openapi.Schema(type=openapi.TYPE_STRING),
+								'updated_at': openapi.Schema(type=openapi.TYPE_STRING)
+							}
+						)
+					),
+					'current_balance': openapi.Schema(type=openapi.TYPE_NUMBER, description='Current token balance')
+				}
+			),
+			401: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					'detail': openapi.Schema(
+						type=openapi.TYPE_STRING,
+						description='Authentication credentials not provided'
+					)
+				}
+			)
+		}
+	)
+	def get(self, request):
+		"""Get user's token purchase history"""
+		try:
+			# Get user's token purchases
+			my_tokens = MyToken.objects.filter(user=request.user).select_related('token').order_by('-created_at')
+			
+			# Serialize the data
+			serializer = TokenPurchaseHistorySerializer(my_tokens, many=True)
+			
+			# Get current balance
+			try:
+				from apps.accounts.models import Balance
+				balance = Balance.objects.get(user=request.user)
+				current_balance = float(balance.amount)
+			except Balance.DoesNotExist:
+				current_balance = 0.0
+			
+			return Response({
+				'success': True,
+				'count': my_tokens.count(),
+				'purchases': serializer.data,
+				'current_balance': current_balance,
+				'user_email': request.user.email
+			}, status=status.HTTP_200_OK)
+			
+		except Exception as e:
+			return Response({
+				'success': False,
+				'error': f'Error retrieving token history: {str(e)}'
+			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GiftTokenHistoryView(APIView):
+	"""API View to get user's gift token history (sent and received)"""
+	permission_classes = [IsAuthenticated]
+	
+	@swagger_auto_schema(
+		operation_summary="Get Gift Token History",
+		operation_description="Retrieve the authenticated user's gift token history (both sent and received)",
+		tags=['Pricing'],
+		responses={
+			200: openapi.Schema(
+				type=openapi.TYPE_OBJECT,
+				properties={
+					'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+					'sent_gifts': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT)),
+					'received_gifts': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT))
+				}
+			)
+		}
+	)
+	def get(self, request):
+		"""Get user's gift token history"""
+		try:
+			# Gifts sent by user
+			sent_gifts = GiftToken.objects.filter(sender=request.user).order_by('-created_at')
+			
+			# Gifts received by user  
+			received_gifts = GiftToken.objects.filter(receiver=request.user).order_by('-created_at')
+			
+			sent_data = []
+			for gift in sent_gifts:
+				sent_data.append({
+					'id': gift.id,
+					'receiver_email': gift.receiver.email if gift.receiver else None,
+					'amount': float(gift.amount),
+					'sent_date': gift.created_at.isoformat(),
+					'type': 'sent'
+				})
+			
+			received_data = []
+			for gift in received_gifts:
+				received_data.append({
+					'id': gift.id,
+					'sender_email': gift.sender.email if gift.sender else None,
+					'amount': float(gift.amount),
+					'received_date': gift.created_at.isoformat(),
+					'type': 'received'
+				})
+			
+			return Response({
+				'success': True,
+				'sent_gifts': sent_data,
+				'received_gifts': received_data,
+				'total_sent': len(sent_data),
+				'total_received': len(received_data)
+			}, status=status.HTTP_200_OK)
+			
+		except Exception as e:
+			return Response({
+				'success': False,
+				'error': f'Error retrieving gift history: {str(e)}'
+			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

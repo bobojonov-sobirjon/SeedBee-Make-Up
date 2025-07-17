@@ -1,0 +1,224 @@
+/* Image Preview Styles */
+.image-preview-container {
+    margin-top: 10px;
+    padding: 10px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.image-preview-container:hover {
+    border-color: #ccc;
+}
+
+.image-preview-img {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.image-preview-img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.no-image-text {
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+    font-size: 14px;
+}
+
+/* Existing image preview styling for saved images */
+.field-image_preview img {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.field-image_preview img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.field-thumbnail_preview img {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    transition: transform 0.3s ease;
+}
+
+.field-thumbnail_preview img:hover {
+    transform: scale(1.1);
+}
+
+/* Center text alignment for admin tables */
+.model-product .results table td,
+.model-product .results table th {
+    text-align: center;
+    vertical-align: middle;
+    padding: 12px 8px;
+}
+
+.change-list-results table td,
+.change-list-results table th {
+    text-align: center;
+    vertical-align: middle;
+    padding: 12px 8px;
+}
+
+/* Center alignment for inline forms */
+.inline-group table td,
+.inline-group table th {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px 8px;
+}
+
+/* Exception for image preview fields - keep them centered but with proper spacing */
+.field-image_preview,
+.field-thumbnail_preview {
+    text-align: center;
+    padding: 15px;
+}
+
+/* Inline table styling improvements */
+.inline-group .tabular {
+    overflow-x: auto;
+}
+
+.inline-group .tabular td {
+    vertical-align: top;
+    padding: 10px;
+}
+
+.inline-group .tabular .field-image_preview {
+    min-width: 220px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .image-preview-img,
+    .field-image_preview img {
+        max-width: 150px;
+        max-height: 150px;
+    }
+    
+    .field-thumbnail_preview img {
+        max-width: 80px;
+        max-height: 80px;
+    }
+    
+    .inline-group .tabular .field-image_preview {
+        min-width: 170px;
+    }
+    
+    .change-list-results table td,
+    .change-list-results table th {
+        padding: 8px 4px;
+        font-size: 13px;
+    }
+}
+
+/* Loading animation for image preview */
+.image-preview-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Style for file input */
+input[type="file"][name*="image"] {
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* Improved table layout for inline forms */
+.inline-group table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.inline-group table td {
+    padding: 8px;
+    vertical-align: top;
+}
+
+/* Style for the "Add another" button */
+.add-row {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #417690;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-row:hover {
+    background-color: #205067;
+}
+
+/* Better spacing for form fields */
+.form-row {
+    margin-bottom: 15px;
+}
+
+.form-row .field-box {
+    text-align: left;
+}
+
+/* Center align action checkboxes */
+.action-checkbox-column {
+    text-align: center;
+}
+
+/* Style for pagination */
+.paginator {
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* Better header styling */
+.results table th {
+    background-color: #417690;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 12px 8px;
+}
+
+.results table th a {
+    color: white;
+    text-decoration: none;
+}
+
+.results table th a:hover {
+    text-decoration: underline;
+} 

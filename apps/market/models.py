@@ -56,6 +56,8 @@ class Product(TranslatableModel):
     is_popular = models.BooleanField(_("Популярный продукт"), default=False, null=True, blank=True)
     is_new = models.BooleanField(_("Новый продукт"), default=False, null=True, blank=True)
     is_discounted = models.BooleanField(_("Продукт со скидкой"), default=False, null=True, blank=True)
+    code = models.CharField(_("Код продукта"), max_length=100, null=False, blank=False)
+    package_code = models.CharField(_("Код упаковки"), max_length=100, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата создания"))
 
     def __str__(self):
@@ -94,34 +96,6 @@ class ProductColor(models.Model):
         ordering = ["created_at"]
         verbose_name = _("Цвет продукта")
         verbose_name_plural = _("Цвета продуктов")
-
-
-class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name=_("Пользователь"))
-    total_price = models.FloatField(_("Общая цена"), default=0.0)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата создания"))
-
-    def __str__(self):
-        return f"Order #{self.id} by {self.user.email if self.user else 'Unknown User', self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = _("Заказ")
-        verbose_name_plural = _("4. Заказы")
-
-
-class OrderProduct(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_products', verbose_name=_("Заказ"))
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='order_products', verbose_name=_("Продукт"))
-    quantity = models.PositiveIntegerField(_("Количество"), default=1)
-
-    def __str__(self):
-        return f"{self.quantity} x {self.product.safe_translation_getter('name', any_language=True) if self.product else 'Без названия'} in Order #{self.order.id}"
-
-    class Meta:
-        ordering = ["order", "product"]
-        verbose_name = _("Продукт заказа")
-        verbose_name_plural = _("Продукты заказов")
 
 
 class CommentAndReviewProduct(models.Model):

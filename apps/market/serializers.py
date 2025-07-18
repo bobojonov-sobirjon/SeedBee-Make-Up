@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.market.models import (
 	TopLevelCategory, SubCategory, Category, Product, ProductImage, ProductColor,
-	Order, OrderProduct, CommentAndReviewProduct
+	CommentAndReviewProduct
 )
 
 

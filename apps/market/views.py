@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.market.models import (
 	TopLevelCategory, SubCategory, Category, Product, ProductImage,
-	ProductColor, Order, OrderProduct, CommentAndReviewProduct
+	ProductColor, CommentAndReviewProduct
 )
 from apps.market.serializers import (
 	TopLevelCategorySerializer, ProductSerializer,

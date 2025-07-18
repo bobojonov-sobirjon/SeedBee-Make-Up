@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from parler.admin import TranslatableAdmin
 from apps.market.models import (
 	Category, TopLevelCategory, SubCategory, Product, ProductImage, ProductColor,
-	Order, OrderProduct, CommentAndReviewProduct
+  	CommentAndReviewProduct
 )
 
 
@@ -258,46 +258,5 @@ class ProductAdmin(TranslatableAdmin):
 		css = {
 			'all': ('admin/css/image_preview.css',)
 		}
-
-
-class OrderProductInline(admin.TabularInline):
-	model = OrderProduct
-	extra = 1
-	fields = ('product', 'product_thumbnail', 'quantity')
-	readonly_fields = ('product_thumbnail',)
-
-	def product_thumbnail(self, obj):
-		if obj.product and obj.product.thumbnail:
-			return format_html(
-				'<img src="{}" style="max-width: 50px; max-height: 50px; object-fit: cover; border-radius: 4px;" />',
-				obj.product.thumbnail.url
-			)
-		return "Нет миниатюры"
-	
-	product_thumbnail.short_description = "Миниатюра товара"
-
-	def has_add_permission(self, request, obj=None):
-		return True
-
-	def has_delete_permission(self, request, obj=None):
-		return True
-
-
-@admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
-	list_display = ('id', 'user', 'total_price', 'created_at')
-	search_fields = ('user__email',)
-	list_filter = ('created_at',)
-	inlines = [OrderProductInline]
-	readonly_fields = ('calculated_total',)
-
-	def calculated_total(self, obj):
-		return sum(item.quantity * item.product.price for item in obj.order_products.all())
-
-	calculated_total.short_description = "Расчетная сумма"
-
-	def get_queryset(self, request):
-		qs = super().get_queryset(request)
-		return qs.prefetch_related('order_products', 'user')
 
 

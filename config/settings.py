@@ -1,12 +1,14 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'default_insecure_key')  # Warning: Change this in .env for production
@@ -299,9 +301,9 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-PAYME_URL = os.environ.get('PAYME_URL', 'https://checkout.test.paycom.uz/api');
-PAYME_ID = os.environ.get('PAYME_ID', 'default_id_here');  # Replace with actual default if needed
-PAYME_KEY = os.environ.get('PAYME_KEY', 'default_key_here');
+PAYME_URL = os.environ.get('PAYME_URL', 'https://checkout.test.paycom.uz/api')
+PAYME_ID = os.environ.get('PAYME_ID', 'default_id_here')
+PAYME_KEY = os.environ.get('PAYME_KEY', 'default_key_here')
 
 print(PAYME_URL)
 print(PAYME_ID)

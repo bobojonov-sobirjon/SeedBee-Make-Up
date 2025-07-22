@@ -325,7 +325,7 @@ LOGGING = {
 
 
 
-sudo systemctl start seedbee.socket
-sudo systemctl enable seedbee.socket
-sudo systemctl daemon-reload
-sudo systemctl restart seedbee
+# sudo systemctl start seedbee.socket
+# sudo systemctl enable seedbee.socket
+# sudo systemctl daemon-reload
+# sudo systemctl restart seedbee

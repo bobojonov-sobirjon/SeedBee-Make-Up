@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'default_insecure_key')  # Warning: Change this in .env for production
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS', '')]
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 

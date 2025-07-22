@@ -9,11 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-04e5xdoalt@b9z25p(uqa&!j!14j65yih9n!b_4q7lelybcy4z'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'default_insecure_key')  # Warning: Change this in .env for production
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 LOCAL_APPS = [
     'apps.accounts',
@@ -181,6 +181,12 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 SITE_ID = 1
 
@@ -292,6 +298,26 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+PAYME_URL = os.environ.get('PAYME_URL', 'https://checkout.test.paycom.uz/api');
+PAYME_ID = os.environ.get('PAYME_ID', 'default_id_here');  # Replace with actual default if needed
+PAYME_KEY = os.environ.get('PAYME_KEY', 'default_key_here');
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+};
 
 
 

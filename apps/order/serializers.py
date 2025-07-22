@@ -3,16 +3,18 @@ from django.utils import timezone
 from datetime import date
 
 from apps.order.models import CardDetails, Order
+from apps.market.models import Product
+from apps.market.serializers import ProductSerializer
 
 
 class CardDetailsSerializer(serializers.ModelSerializer):
     card_number = serializers.CharField(max_length=19)  # Allow spaces in input
-    expiration_date = serializers.DateField()
+    expiration_date = serializers.CharField(max_length=4)
 
     class Meta:
         model = CardDetails
-        fields = ['id', 'user', 'card_number', 'card_holder', 'expiration_date', 'created_at']
-        read_only_fields = ['id', 'user', 'created_at']
+        fields = ['id', 'user', 'card_number', 'card_holder', 'expiration_date', 'created_at', 'payme_token', 'verified']
+        read_only_fields = ['id', 'user', 'created_at', 'payme_token', 'verified']
         
     def validate_card_number(self, value):
         """Validate card number format and Luhn algorithm"""
@@ -32,8 +34,16 @@ class CardDetailsSerializer(serializers.ModelSerializer):
         return card_number
     
     def validate_expiration_date(self, value):
-        """Validate expiration date"""
-        if value <= date.today():
+        """Validate expiration date in MMYY format"""
+        if len(value) != 4 or not value.isdigit():
+            raise serializers.ValidationError("Формат даты истечения: MMYY (например, 0325 для марта 2025)")
+        month = int(value[:2])
+        year = int(value[2:])
+        if month < 1 or month > 12:
+            raise serializers.ValidationError("Неверный месяц (01-12)")
+        current_year = date.today().year % 100
+        current_month = date.today().month
+        if year < current_year or (year == current_year and month < current_month):
             raise serializers.ValidationError("Дата истечения срока действия карты должна быть в будущем.")
         return value
     
@@ -60,3 +70,17 @@ class CardDetailsSerializer(serializers.ModelSerializer):
         """Create card details with current user"""
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+        read_only_fields = ('order_id', 'user', 'created_at', 'payment_status')
+
+    def get_products(self, obj):
+        product_ids = [p['id'] for p in obj.products]
+        products = Product.objects.filter(id__in=product_ids)
+        return ProductSerializer(products, many=True, context=self.context).data

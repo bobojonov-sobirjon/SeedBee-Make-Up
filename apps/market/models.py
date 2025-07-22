@@ -56,6 +56,7 @@ class Product(TranslatableModel):
     is_popular = models.BooleanField(_("Популярный продукт"), default=False, null=True, blank=True)
     is_new = models.BooleanField(_("Новый продукт"), default=False, null=True, blank=True)
     is_discounted = models.BooleanField(_("Продукт со скидкой"), default=False, null=True, blank=True)
+    stock = models.IntegerField(_("Количество на складе"), default=0, null=True, blank=True)
     code = models.CharField(_("Код продукта"), max_length=100, null=False, blank=False)
     package_code = models.CharField(_("Код упаковки"), max_length=100, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата создания"))

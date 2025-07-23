@@ -15,7 +15,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'default_insecure_key')  # Warning: Ch
 
 ALLOWED_HOSTS = ['*']
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
+
 
 LOCAL_APPS = [
     'apps.accounts',
@@ -122,7 +124,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "/var/www/media/")
+MEDIA_ROOT = "/var/www/media/"
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [

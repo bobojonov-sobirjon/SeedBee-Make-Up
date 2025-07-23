@@ -222,6 +222,9 @@ class OrderCreateView(APIView):
                     )
                 ),
                 'card_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'address': openapi.Schema(type=openapi.TYPE_STRING),
+                'phone': openapi.Schema(type=openapi.TYPE_STRING),
+                'full_name': openapi.Schema(type=openapi.TYPE_STRING),
             },
             required=['product_list', 'card_id']
         ),
@@ -237,6 +240,9 @@ class OrderCreateView(APIView):
     def post(self, request):
         product_list = request.data.get('product_list', [])
         card_id = request.data.get('card_id')
+        address = request.data.get('address')
+        phone = request.data.get('phone')
+        full_name = request.data.get('full_name')
         if not product_list or not card_id:
             return Response({"error": "Требуются product_list и card_id"}, status=400)
 
@@ -246,7 +252,7 @@ class OrderCreateView(APIView):
         items, total_amount, products_json = self._prepare_order_data(products, product_list)
 
         with transaction.atomic():
-            order = self._create_and_pay_order(card, total_amount, items, products_json)
+            order = self._create_and_pay_order(card, total_amount, items, products_json, address, phone, full_name)
             if order.payment_status == 4:
                 self._update_stock(products, product_list)
             status_desc = dict(Order.PAYMENT_STATES).get(order.payment_status, "Неизвестное состояние")
@@ -297,7 +303,7 @@ class OrderCreateView(APIView):
                     })
         return items, int(total_amount * 100), products_json
 
-    def _create_and_pay_order(self, card, total_amount, items, products_json):
+    def _create_and_pay_order(self, card, total_amount, items, products_json, address=None, phone=None, full_name=None):
         order_uuid = uuid.uuid4()
         order_id = str(order_uuid)
         payme_client = PaymeClient()
@@ -316,7 +322,10 @@ class OrderCreateView(APIView):
             order_id=order_uuid,
             products=products_json,
             total_price=total_amount / 100,
-            payment_status=state
+            payment_status=state,
+            address=address,
+            phone=phone,
+            full_name=full_name
         )
         return order
 

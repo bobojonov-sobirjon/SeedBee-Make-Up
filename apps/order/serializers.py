@@ -78,7 +78,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
-        read_only_fields = ('order_id', 'user', 'created_at', 'payment_status')
+        read_only_fields = ('order_id', 'user', 'created_at', 'payment_status', 'address', 'phone', 'full_name')
 
     def get_products(self, obj):
         product_ids = [p['id'] for p in obj.products]

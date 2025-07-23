@@ -44,7 +44,10 @@ class Order(models.Model):
         (50, "Чек отменен"),
     )
     order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name=_("ID заказа"))
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders', verbose_name=_("Пользователь"))
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders', verbose_name=_('Пользователь'))
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name=_('Адрес'))
+    phone = models.CharField(max_length=32, blank=True, null=True, verbose_name=_('Телефон'))
+    full_name = models.CharField(max_length=255, blank=True, null=True, verbose_name=_('ФИО'))
     products = models.JSONField(verbose_name=_("Продукты"), null=True, blank=True)
     total_price = models.FloatField(_("Общая цена"), default=0.0)
     payment_status = models.IntegerField(_("Статус оплаты"), choices=PAYMENT_STATES, default=0)

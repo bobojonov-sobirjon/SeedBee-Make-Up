@@ -111,6 +111,71 @@ class ProductListView(APIView):
 		return paginator.get_paginated_response(serializer.data)
 
 
+class ProductColorHexListView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_id='list_product_colors',
+        operation_description='Retrieve a list of all distinct color hex values used in products.',
+        operation_summary='List Distinct Product Colors',
+        tags=['Products'],
+        responses={
+            200: openapi.Response(
+                description='List of distinct color hex values',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'colors': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING, description='Hex color'),
+                            description='List of unique hex color values'
+                        )
+                    }
+                )
+            ),
+            400: 'Bad Request'
+        }
+    )
+    def get(self, request):
+        # Get all color hex values from ProductColor, then deduplicate in Python to ensure uniqueness
+        colors_qs = ProductColor.objects.values_list('color', flat=True)
+        colors = list(dict.fromkeys(colors_qs))
+        return Response({'colors': colors}, status=status.HTTP_200_OK)
+
+
+class ProductBrandListView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_id='list_product_brands',
+        operation_description='Retrieve a list of all distinct brand values used in products.',
+        operation_summary='List Distinct Product Brands',
+        tags=['Products'],
+        responses={
+            200: openapi.Response(
+                description='List of distinct product brands',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'brands': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING, description='Brand name'),
+                            description='List of unique product brands'
+                        )
+                    }
+                )
+            ),
+            400: 'Bad Request'
+        }
+    )
+    def get(self, request):
+        # Get all non-empty brand values from Product, then deduplicate in Python to ensure uniqueness
+        brands_qs = Product.objects.exclude(brand__isnull=True).exclude(brand__exact='').values_list('brand', flat=True)
+        # Use dict.fromkeys to preserve order while deduplicating
+        brands = list(dict.fromkeys(brands_qs))
+        return Response({'brands': brands}, status=status.HTTP_200_OK)
+
+
 class ProductDetailView(APIView):
 	permission_classes = [AllowAny]
 

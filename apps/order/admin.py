@@ -56,7 +56,7 @@ class CardDetailsAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'user_email', 'total_price', 'products_count', 'created_at', 'status_display', 'payment_status_display')
+    list_display = ('order_id', 'user_email', 'full_name', 'phone', 'address', 'total_price', 'products_count', 'created_at', 'status_display', 'payment_status_display')
     list_filter = ('created_at', 'user', 'total_price', 'payment_status')
     search_fields = ('order_id', 'user__email')
     readonly_fields = ('order_id', 'created_at', 'products_display')
@@ -64,7 +64,7 @@ class OrderAdmin(admin.ModelAdmin):
     
     fieldsets = (
         (_('Основная информация'), {
-            'fields': ('order_id', 'user', 'total_price', 'payment_status')
+            'fields': ('order_id', 'user', 'full_name', 'phone', 'address', 'total_price', 'payment_status')
         }),
         (_('Продукты'), {
             'fields': ('products_display',),

@@ -45,8 +45,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         if not password:
             raise ValidationError({"password": "Password is required for user creation"})
 
-        groups_data = get_object_or_404(Group, id=1)
-
         email = validated_data.pop('email')
         
         user = get_user_model().objects.create_user(
@@ -54,9 +52,6 @@ class SignUpSerializer(serializers.ModelSerializer):
             password=password,
             **validated_data
         )
-
-        user.groups.set([groups_data])
-        user.save()
 
         return user
 

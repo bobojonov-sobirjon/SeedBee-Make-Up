@@ -113,3 +113,22 @@ class BlogListView(APIView):
 			return paginator.get_paginated_response(serializer.data)
 		serializer = BlogSerializer(blogs, many=True, context={'request': request})
 		return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BlogDetailView(APIView):
+	permission_classes = [AllowAny]
+
+	@swagger_auto_schema(
+		operation_id='get_blog_detail',
+		operation_description='Retrieve a blog detail.',
+		operation_summary='Get Blog Detail',
+		tags=['Blogs'],
+		responses={
+			200: BlogSerializer(read_only=True),
+			400: 'Bad Request'
+		}
+	)
+	def get(self, request, pk):
+		blog = Blog.objects.get(pk=pk)
+		serializer = BlogSerializer(blog, context={'request': request})
+		return Response(serializer.data, status=status.HTTP_200_OK)

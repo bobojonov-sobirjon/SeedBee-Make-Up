@@ -337,5 +337,52 @@ class OrderCreateView(APIView):
                     prod.save()
 
     
-	
+class UserOrderListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_id='list_user_orders',
+        operation_description='Retrieve a paginated list of all orders for the authenticated user.',
+        operation_summary='List User Orders',
+        tags=['Orders'],
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, description="Page number", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page (max 50)", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            200: openapi.Response(
+                description='Paginated list of user orders',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER, description='Total number of orders'),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, description='Next page URL'),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, description='Previous page URL'),
+                        'results': openapi.Schema(
+                            type=openapi.TYPE_ARRAY, 
+                            items=openapi.Schema(type=openapi.TYPE_OBJECT)
+                        ),
+                    }
+                )
+            ),
+            400: 'Bad Request'
+        }
+    )
+    def get(self, request):
+        # Get all orders for the authenticated user
+        queryset = Order.objects.filter(user=request.user).order_by('-created_at')
+        
+        # Apply pagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginator.page_size_query_param = 'page_size'
+        paginator.max_page_size = 50
+        
+        paginated_orders = paginator.paginate_queryset(queryset, request)
+        
+        # Serialize the data
+        serializer = OrderSerializer(paginated_orders, many=True, context={'request': request})
+        
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
 	

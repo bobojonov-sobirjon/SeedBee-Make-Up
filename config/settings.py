@@ -307,10 +307,6 @@ PAYME_URL = os.environ.get('PAYME_URL', 'https://checkout.test.paycom.uz/api')
 PAYME_ID = os.environ.get('PAYME_ID', 'default_id_here')
 PAYME_KEY = os.environ.get('PAYME_KEY', 'default_key_here')
 
-print(PAYME_URL)
-print(PAYME_ID)
-print(PAYME_KEY)
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

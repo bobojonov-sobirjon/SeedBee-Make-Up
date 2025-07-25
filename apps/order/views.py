@@ -28,6 +28,7 @@ class PaymeClient:
         self.url = settings.PAYME_URL;
         self.id = settings.PAYME_ID;
         self.key = settings.PAYME_KEY;
+        print(self.id, self.key, self.url)
         self.headers = {
             "X-Auth": f"{self.id}:{self.key}",
             "Content-Type": "application/json",
@@ -98,12 +99,6 @@ class CardDetailsView(APIView):
                 user=request.user, 
                 card_number=card_number
             ).first()
-            
-            if existing_card:
-                return Response(
-                    {'error': 'Карта с таким номером уже существует'}, 
-                    status=status.HTTP_409_CONFLICT
-                )
             
             serializer = CardDetailsSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():

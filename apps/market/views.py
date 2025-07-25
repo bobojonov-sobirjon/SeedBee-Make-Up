@@ -94,7 +94,7 @@ class ProductListView(APIView):
 	)
 	def get(self, request):
 		# Get all products
-		queryset = Product.objects.all()
+		queryset = Product.objects.exclude(stock=0).order_by('-created_at')
 		
 		# Apply filters using Django Filter
 		filterset = ProductFilter(request.query_params, queryset=queryset)

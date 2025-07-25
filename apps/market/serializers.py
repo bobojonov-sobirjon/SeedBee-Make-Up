@@ -101,7 +101,7 @@ class ProductSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Product
 		fields = ['id', 'translated_name', 'translated_description', 'category', 'price', 'discount_price', 'thumbnail', 'brand', 'images', 'colors',
-				  'comment_count', 'comment_and_review', 'total_rating', 'is_news', 'is_populars', 'is_new', 'is_popular', 'is_discounted', 'created_at']
+				  'comment_count', 'comment_and_review', 'total_rating', 'is_news', 'is_populars', 'stock', 'is_new', 'is_popular', 'is_discounted', 'created_at']
 		read_only_fields = ['created_at']
 
 	def get_is_news(self, obj):

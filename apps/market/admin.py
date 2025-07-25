@@ -201,7 +201,10 @@ class ProductAdmin(TranslatableAdmin):
 			'description': 'Название и описание продукта переводится на все языки. Переключайтесь между языками: RU | EN | UZ | KK | KO'
 		}),
 		('Цены', {
-			'fields': ('price', 'discount_price')
+			'fields': ('price', 'discount_price',)
+		}),
+		('Дополнительная информация', {
+			'fields': ('is_popular', 'is_new', 'is_discounted', 'stock', 'code', 'package_code')
 		}),
 		('Изображения', {
 			'fields': ('thumbnail', 'thumbnail_preview')

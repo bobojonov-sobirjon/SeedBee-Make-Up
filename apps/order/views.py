@@ -30,18 +30,30 @@ class PaymeClient:
         self.key = settings.PAYME_KEY;
         print(self.id, self.key, self.url)
         self.headers = {
-            "X-Auth": f"{self.id}:{self.key}",
+            "X-Auth": f"{self.id}",  # Only send id, not key
             "Content-Type": "application/json",
         };
         self.timeout = 10  # Added for performance
 
     def _make_request(self, payload):
+        method = payload.get("method", "")
+        # For cards.* methods, only send id. For receipts.* methods, send id:key
+        if method.startswith("cards."):
+            headers = {
+                "X-Auth": f"{self.id}",
+                "Content-Type": "application/json",
+            }
+        else:
+            headers = {
+                "X-Auth": f"{self.id}:{self.key}",
+                "Content-Type": "application/json",
+            }
         try:
-            response = requests.post(self.url, headers=self.headers, json=payload, timeout=self.timeout);
-            response.raise_for_status();
-            return response.json();
+            response = requests.post(self.url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            return response.json()
         except RequestException as e:
-            logger.error(f"Payme request failed: {str(e)}");
+            logger.error(f"Payme request failed: {str(e)}")
             raise;
 
     def create_card(self, card_number, expire):
@@ -94,29 +106,42 @@ class CardDetailsView(APIView):
     def post(self, request):
         """Create new card details for the authenticated user"""
         try:
+            print("Request data:", request.data)
             card_number = request.data.get('card_number', '').replace(' ', '')
+            print("Normalized card number:", card_number)
             existing_card = CardDetails.objects.filter(
                 user=request.user, 
                 card_number=card_number
             ).first()
+            print("Existing card:", existing_card)
             
             serializer = CardDetailsSerializer(data=request.data, context={'request': request})
+            print("Serializer valid?", serializer.is_valid())
+            print("Serializer errors:", serializer.errors)
             if serializer.is_valid():
                 card = serializer.save()
+                print("Card saved:", card)
                 # Payme integration
                 payme_client = PaymeClient()
                 try:
+                    print("Calling Payme create_card with:", card.card_number, card.expiration_date)
                     data = payme_client.create_card(card.card_number, card.expiration_date)
+                    print("Payme response:", data)
                     if 'result' in data and 'card' in data['result']:
                         card.payme_token = data['result']['card']['token']
                         card.save()
-                except RequestException:
+                        print("Payme token saved:", card.payme_token)
+                except RequestException as e:
+                    print("Payme card creation failed:", str(e))
                     logger.warning("Payme card creation failed, proceeding without token")
                 serializer = CardDetailsSerializer(card, context={'request': request})
+                print("Final serializer data:", serializer.data)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+            print("Returning serializer errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
+            print("Exception occurred:", str(e))
             logger.error(f"Error creating card: {str(e)}")
             return Response(
                 {'error': 'Ошибка при создании карты'}, 

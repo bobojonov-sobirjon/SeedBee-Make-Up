@@ -3,12 +3,17 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 from django.conf import settings
 from django.conf.urls.static import static
+from django.utils.translation import gettext_lazy as _
 
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 
 from rest_framework import permissions
 
+# Admin site Russian configuration
+admin.site.site_header = _("Seedbee.uz Администрирование")
+admin.site.site_title = _("Seedbee.uz Администрирование")
+admin.site.index_title = _("Администрирование")
 
 schema_view: get_schema_view = get_schema_view(
     openapi.Info(

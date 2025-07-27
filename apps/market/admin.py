@@ -24,7 +24,7 @@ class ParentCategoryFilter(admin.SimpleListFilter):
 
 @admin.register(TopLevelCategory)
 class TopLevelCategoryAdmin(TranslatableAdmin):
-	list_display = ('translated_name', 'get_all_translations', 'created_at')
+	list_display = ('russian_title', 'get_all_translations', 'created_at')
 	search_fields = ('translations__name',)
 	list_filter = ('created_at',)
 	fieldsets = (
@@ -37,6 +37,16 @@ class TopLevelCategoryAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('created_at',)
+	
+	def russian_title(self, obj):
+		"""Return Russian translation of the name"""
+		try:
+			obj.set_current_language('ru')
+			return obj.name or 'Без названия'
+		except:
+			return obj.safe_translation_getter('name', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 	
 	def get_all_translations(self, obj):
 		"""Показать все переводы для быстрого просмотра"""
@@ -76,7 +86,7 @@ class TopLevelCategoryAdmin(TranslatableAdmin):
 
 @admin.register(SubCategory)
 class SubCategoryAdmin(TranslatableAdmin):
-	list_display = ('translated_name', 'parent', 'get_all_translations', 'created_at')
+	list_display = ('russian_title', 'parent', 'get_all_translations', 'created_at')
 	search_fields = ('translations__name', 'parent__translations__name')
 	list_filter = (ParentCategoryFilter, 'created_at')
 	fieldsets = (
@@ -89,6 +99,16 @@ class SubCategoryAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('created_at',)
+	
+	def russian_title(self, obj):
+		"""Return Russian translation of the name"""
+		try:
+			obj.set_current_language('ru')
+			return obj.name or 'Без названия'
+		except:
+			return obj.safe_translation_getter('name', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 	
 	def get_all_translations(self, obj):
 		"""Показать все переводы для быстрого просмотра"""
@@ -192,7 +212,7 @@ class CommentAndReviewProductInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(TranslatableAdmin):
-	list_display = ('thumbnail_preview', 'translated_name', 'category', 'brand', 'price', 'discount_price', 'get_translation_status', 'created_at')
+	list_display = ('thumbnail_preview', 'russian_title', 'category', 'brand', 'price', 'discount_price', 'get_translation_status', 'created_at')
 	search_fields = ('translations__name', 'category__translations__name', 'brand')
 	list_filter = ('category', 'brand', 'created_at')
 	fieldsets = (
@@ -212,6 +232,16 @@ class ProductAdmin(TranslatableAdmin):
 	)
 	readonly_fields = ('thumbnail_preview',)
 	inlines = [ProductImageInline, ProductColorInline, CommentAndReviewProductInline]
+	
+	def russian_title(self, obj):
+		"""Return Russian translation of the name"""
+		try:
+			obj.set_current_language('ru')
+			return obj.name or 'Без названия'
+		except:
+			return obj.safe_translation_getter('name', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 	
 	def get_translation_status(self, obj):
 		"""Показать статус переводов"""

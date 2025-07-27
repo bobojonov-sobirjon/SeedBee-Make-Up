@@ -9,7 +9,7 @@ from apps.banner.models import (
 
 @admin.register(Banner)
 class BannerAdmin(TranslatableAdmin):
-	list_display = ('image_preview', 'title', 'get_translation_status', 'created_at')
+	list_display = ('image_preview', 'russian_title', 'get_translation_status', 'created_at')
 	search_fields = ('translations__title',)
 	list_filter = ('created_at',)
 	fieldsets = (
@@ -25,6 +25,16 @@ class BannerAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('image_preview', 'created_at')
+
+	def russian_title(self, obj):
+		"""Return Russian translation of the title"""
+		try:
+			obj.set_current_language('ru')
+			return obj.title or 'Без названия'
+		except:
+			return obj.safe_translation_getter('title', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 
 	def get_translation_status(self, obj):
 		"""Показать статус переводов"""
@@ -61,7 +71,7 @@ class BannerAdmin(TranslatableAdmin):
 
 @admin.register(Partner)
 class PartnerAdmin(TranslatableAdmin):
-	list_display = ('image_preview', 'title', 'get_translation_status', 'created_at')
+	list_display = ('image_preview', 'russian_title', 'get_translation_status', 'created_at')
 	search_fields = ('translations__title',)
 	list_filter = ('created_at',)
 	fieldsets = (
@@ -77,6 +87,16 @@ class PartnerAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('image_preview', 'created_at')
+
+	def russian_title(self, obj):
+		"""Return Russian translation of the title"""
+		try:
+			obj.set_current_language('ru')
+			return obj.title or 'Без названия'
+		except:
+			return obj.safe_translation_getter('title', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 
 	def get_translation_status(self, obj):
 		"""Показать статус переводов"""
@@ -113,7 +133,7 @@ class PartnerAdmin(TranslatableAdmin):
 
 @admin.register(Advertisement)
 class AdvertisementAdmin(TranslatableAdmin):
-	list_display = ('image_preview', 'title', 'get_translation_status', 'created_at')
+	list_display = ('image_preview', 'russian_title', 'get_translation_status', 'created_at')
 	search_fields = ('translations__title',)
 	list_filter = ('created_at',)
 	fieldsets = (
@@ -129,6 +149,16 @@ class AdvertisementAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('image_preview', 'created_at')
+
+	def russian_title(self, obj):
+		"""Return Russian translation of the title"""
+		try:
+			obj.set_current_language('ru')
+			return obj.title or 'Без названия'
+		except:
+			return obj.safe_translation_getter('title', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 
 	def get_translation_status(self, obj):
 		"""Показать статус переводов"""
@@ -165,7 +195,7 @@ class AdvertisementAdmin(TranslatableAdmin):
 
 @admin.register(Blog)
 class BlogAdmin(TranslatableAdmin):
-	list_display = ('image_preview', 'title', 'get_translation_status', 'created_at')
+	list_display = ('image_preview', 'russian_title', 'get_translation_status', 'created_at')
 	search_fields = ('translations__title',)
 	list_filter = ('created_at',)
 	fieldsets = (
@@ -181,6 +211,16 @@ class BlogAdmin(TranslatableAdmin):
 		}),
 	)
 	readonly_fields = ('image_preview', 'created_at')
+
+	def russian_title(self, obj):
+		"""Return Russian translation of the title"""
+		try:
+			obj.set_current_language('ru')
+			return obj.title or 'Без названия'
+		except:
+			return obj.safe_translation_getter('title', any_language=True) or 'Без названия'
+	
+	russian_title.short_description = 'Название (RU)'
 
 	def get_translation_status(self, obj):
 		"""Показать статус переводов"""

@@ -39,7 +39,7 @@ class TopLevelCategoryListView(APIView):
 		}
 	)
 	def get(self, request):
-		categories = TopLevelCategory.objects.all()
+		categories =  Category.objects.filter(parent=None).order_by('-id')
 		serializer = TopLevelCategorySerializer(categories, many=True, context={'request': request})
 		return Response(serializer.data, status=status.HTTP_200_OK)
 
